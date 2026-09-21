@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusCorp | Employee Sign In</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #111827;
+            --line: #243044;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Segoe UI, Arial, sans-serif;
+            background:
+                radial-gradient(circle at top right, #1e3a8a 0%, transparent 40%),
+                linear-gradient(180deg, #0b1220 0%, #020617 100%);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .shell {
+            width: 100%;
+            max-width: 920px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        }
+        .brand {
+            padding: 48px 40px;
+            background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #60a5fa;
+            color: #0b1220;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+        }
+        .brand h1 {
+            margin: 36px 0 12px;
+            font-size: 32px;
+            line-height: 1.2;
+        }
+        .brand p {
+            margin: 0;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        .meta {
+            margin-top: 40px;
+            color: #93c5fd;
+            font-size: 13px;
+        }
+        .form-side { padding: 48px 40px; }
+        .form-side h2 { margin: 0 0 8px; font-size: 24px; }
+        .form-side .sub {
+            margin: 0 0 28px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        input {
+            width: 100%;
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: -4px 0 18px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .row a { color: #93c5fd; text-decoration: none; }
+        button {
+            width: 100%;
+            border: 0;
+            border-radius: 8px;
+            padding: 12px 14px;
+            background: var(--accent);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: var(--accent-hover); }
+        .error {
+            margin-top: 14px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+            font-size: 13px;
+        }
+        .hint {
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+        }
+        @media (max-width: 800px) {
+            .shell { grid-template-columns: 1fr; }
+            .brand { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <section class="brand">
+            <div class="logo">
+                <div class="logo-mark">N</div>
+                <div>NexusCorp Internal</div>
+            </div>
+            <h1>Employee access portal</h1>
+            <p>Sign in with your corporate credentials to continue to the HR and admin workspace.</p>
+            <div class="meta">Protected network · TLS 1.3 · SSO ready</div>
+        </section>
+        <section class="form-side">
+            <h2>Sign in</h2>
+            <p class="sub">Use your company username and password.</p>
+            <form method="POST">
+                <label for="username">Username</label>
+                <input id="username" type="text" name="username" autocomplete="username" required>
+                <label for="password">Password</label>
+                <input id="password" type="password" name="password" autocomplete="current-password" required>
+                <div class="row">
+                    <span>Keep me signed in</span>
+                    <a href="#">Forgot password?</a>
+                </div>
+                <button type="submit">Continue</button>
+                {% if error %}
+                <div class="error">Invalid username or password. Please try again.</div>
+                {% endif %}
+            </form>
+            <p class="hint">Need help? Contact IT Support · ext. 4400</p>
+        </section>
+    </div>
+</body>
+</html>

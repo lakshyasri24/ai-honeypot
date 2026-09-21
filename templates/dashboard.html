@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="8">
+    <title>SOC Dashboard | AI Honeypot</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --panel: #111827;
+            --line: #243044;
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --red: #ef4444;
+            --orange: #f59e0b;
+            --green: #22c55e;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Segoe UI, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+        .sidebar {
+            background: #0f172a;
+            border-right: 1px solid var(--line);
+            padding: 22px 14px;
+        }
+        .brand { font-weight: 700; padding: 8px 10px 20px; }
+        .brand small { display: block; color: var(--muted); font-weight: 400; margin-top: 4px; }
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            color: var(--text);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+        .nav-btn:hover, .nav-btn.active { background: #1e293b; color: #93c5fd; }
+        .main { padding: 24px; }
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+        .live { color: #86efac; font-size: 13px; }
+        .live::before {
+            content: "";
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .card h3 { margin: 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+        .card .number { font-size: 28px; font-weight: 700; margin-top: 8px; }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+        h1 { margin: 0; font-size: 24px; }
+        h2 { margin: 0 0 14px; font-size: 18px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+        th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); font-weight: 600; }
+        tr.clickable { cursor: pointer; }
+        tr.clickable:hover { background: #1e293b; }
+        .high { color: var(--red); font-weight: 700; }
+        .medium { color: var(--orange); font-weight: 700; }
+        .low { color: var(--green); font-weight: 700; }
+        .ai-high { color: var(--red); font-weight: 700; }
+        .ai-suspicious { color: var(--orange); font-weight: 700; }
+        .ai-normal { color: var(--green); font-weight: 700; }
+        .not-analyzed { color: var(--muted); font-weight: 700; }
+        .alert {
+            border-left: 4px solid var(--red);
+            background: #1a0f12;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 16px; }
+        .kv { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; font-size: 14px; }
+        .kv b { color: var(--muted); font-weight: 500; }
+        .empty { color: var(--muted); padding: 20px 0; }
+        .view { display: none; }
+        .view.active { display: block; }
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+            .cards, .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            AI Honeypot SOC
+            <small>Detection console</small>
+        </div>
+        <button class="nav-btn active" data-view="overview" onclick="showView('overview')">Overview</button>
+        <button class="nav-btn" data-view="alerts" onclick="showView('alerts')">High Risk Alerts</button>
+        <button class="nav-btn" data-view="activity" onclick="showView('activity')">Activity Log</button>
+        <button class="nav-btn" data-view="intel" onclick="showView('intel')">Detection Details</button>
+        <button class="nav-btn" data-view="ai" onclick="showView('ai')">AI Analysis</button>
+        <button class="nav-btn" onclick="window.location.href='/logs'">Full Logs</button>
+        <button class="nav-btn" onclick="window.location.href='/'">Honeypot Login</button>
+    </aside>
+
+    <main class="main">
+        <div class="top">
+            <div>
+                <h1>Security Detection Dashboard</h1>
+                <p style="margin:6px 0 0;color:#94a3b8;">Use the left menu. Click any event for full detection info.</p>
+            </div>
+            <div class="live">LIVE MONITORING</div>
+        </div>
+
+        <div class="cards">
+            <div class="card"><h3>Total Activities</h3><div class="number">{{ total }}</div></div>
+            <div class="card"><h3>Unique IP Addresses</h3><div class="number">{{ unique_ips }}</div></div>
+            <div class="card"><h3>High Risk Events</h3><div class="number high">{{ high_risk }}</div></div>
+            <div class="card"><h3>Suspicious Events</h3><div class="number medium">{{ suspicious }}</div></div>
+        </div>
+
+        <section id="overview" class="view active">
+            <div class="grid-2">
+                <div class="panel">
+                    <h2>Latest detections</h2>
+                    <table>
+                        <tr><th>Time</th><th>IP</th><th>User</th><th>Risk</th><th>AI</th></tr>
+                        {% for activity in activities[:8] %}
+                        <tr class="clickable" onclick="openIntel({{ loop.index0 }})">
+                            <td>{{ activity[4] }}</td>
+                            <td>{{ activity[1] }}</td>
+                            <td>{{ activity[2] }}</td>
+                            <td>{{ activity[5] }}/100</td>
+                            <td>{{ activity[8] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="panel">
+                    <h2>How detection works</h2>
+                    <p><b>Rule engine:</b> counts login attempts from the same IP.</p>
+                    <p><b>5+ attempts</b> → Suspicious / Medium</p>
+                    <p><b>10+ attempts</b> → Brute Force / High</p>
+                    <p><b>AI model:</b> Isolation Forest labels NORMAL, SUSPICIOUS, or HIGH RISK using attempt count, risk score, and time gaps.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="alerts" class="view">
+            <div class="panel">
+                <h2>High Risk Alerts</h2>
+                {% set ns = namespace(found=false) %}
+                {% for activity in activities %}
+                    {% if activity[8] == "HIGH RISK" %}
+                        {% set ns.found = true %}
+                        <div class="alert" onclick="openIntel({{ loop.index0 }})">
+                            <div class="high">HIGH RISK ALERT</div>
+                            <div class="kv" style="margin-top:10px;">
+                                <b>IP Address</b><span>{{ activity[1] }}</span>
+                                <b>Username</b><span>{{ activity[2] }}</span>
+                                <b>Risk Score</b><span>{{ activity[5] }}/100</span>
+                                <b>Time</b><span>{{ activity[4] }}</span>
+                            </div>
+                            <small style="color:#94a3b8;">Click to open full detection details</small>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% if not ns.found %}
+                    <p class="empty">No high-risk AI alerts in the latest events.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section id="activity" class="view">
+            <div class="panel">
+                <h2>Recent Honeypot Activity — click a row</h2>
+                <table>
+                    <tr>
+                        <th>ID</th><th>IP Address</th><th>Username</th><th>Action</th>
+                        <th>Time</th><th>Risk</th><th>Behaviour</th><th>Severity</th><th>AI Behaviour</th>
+                    </tr>
+                    {% for activity in activities %}
+                    <tr class="clickable" onclick="openIntel({{ loop.index0 }})">
+                        <td>{{ activity[0] }}</td>
+                        <td>{{ activity[1] }}</td>
+                        <td>{{ activity[2] }}</td>
+                        <td>{{ activity[3] }}</td>
+                        <td>{{ activity[4] }}</td>
+                        <td>{{ activity[5] }}/100</td>
+                        <td>{{ activity[6] }}</td>
+                        <td>
+                            {% if activity[7] == "HIGH" %}<span class="high">HIGH</span>
+                            {% elif activity[7] == "MEDIUM" %}<span class="medium">MEDIUM</span>
+                            {% else %}<span class="low">LOW</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if activity[8] == "HIGH RISK" %}<span class="ai-high">HIGH RISK</span>
+                            {% elif activity[8] == "SUSPICIOUS" %}<span class="ai-suspicious">SUSPICIOUS</span>
+                            {% elif activity[8] == "NORMAL" %}<span class="ai-normal">NORMAL</span>
+                            {% else %}<span class="not-analyzed">NOT ANALYZED</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </section>
+
+        <section id="intel" class="view">
+            <div class="grid-2">
+                <div class="panel">
+                    <h2>Selected detection</h2>
+                    <p id="intelEmpty" class="empty">Click any event in Overview, Alerts, or Activity Log.</p>
+                    <div id="intelBox" class="kv" style="display:none;">
+                        <b>Event ID</b><span id="dId"></span>
+                        <b>IP Address</b><span id="dIp"></span>
+                        <b>Username</b><span id="dUser"></span>
+                        <b>Action</b><span id="dAction"></span>
+                        <b>Timestamp</b><span id="dTime"></span>
+                        <b>Risk Score</b><span id="dRisk"></span>
+                        <b>Rule Behaviour</b><span id="dBeh"></span>
+                        <b>Severity</b><span id="dSev"></span>
+                        <b>AI Behaviour</b><span id="dAi"></span>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>What this means</h2>
+                    <p id="dMeaning">Select an event to see an explanation.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai" class="view">
+            <div class="panel">
+                <h2>AI classification of recent events</h2>
+                <table>
+                    <tr><th>ID</th><th>IP</th><th>Username</th><th>AI Behaviour</th><th></th></tr>
+                    {% for activity in activities %}
+                    <tr class="clickable" onclick="openIntel({{ loop.index0 }})">
+                        <td>{{ activity[0] }}</td>
+                        <td>{{ activity[1] }}</td>
+                        <td>{{ activity[2] }}</td>
+                        <td>{{ activity[8] }}</td>
+                        <td>View details</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const events = [
+        {% for activity in activities %}
+        {
+            id: {{ activity[0]|tojson }},
+            ip: {{ activity[1]|tojson }},
+            user: {{ activity[2]|tojson }},
+            action: {{ activity[3]|tojson }},
+            time: {{ activity[4]|tojson }},
+            risk: {{ activity[5]|tojson }},
+            behavior: {{ activity[6]|tojson }},
+            severity: {{ activity[7]|tojson }},
+            ai: {{ activity[8]|tojson }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function showView(id) {
+        document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+        document.querySelectorAll(".nav-btn[data-view]").forEach(b => b.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        const btn = document.querySelector('.nav-btn[data-view="' + id + '"]');
+        if (btn) btn.classList.add("active");
+        sessionStorage.setItem("socView", id);
+    }
+
+    function meaning(ev) {
+        if (ev.ai === "HIGH RISK") {
+            return "AI marked this as HIGH RISK. Combined with repeated logins from this IP, this looks like aggressive or automated targeting of the honeypot.";
+        }
+        if (ev.ai === "SUSPICIOUS") {
+            return "AI marked this as SUSPICIOUS. Timing between attempts or the risk score is unusual. Watch this IP.";
+        }
+        if (ev.behavior === "Brute Force") {
+            return "Rule engine saw 10 or more attempts from this IP. This is treated as brute-force behaviour.";
+        }
+        if (ev.behavior === "Suspicious") {
+            return "Rule engine saw 5 or more attempts from this IP. This is treated as suspicious probing.";
+        }
+        return "Low-volume login attempt. Still captured by the honeypot for monitoring.";
+    }
+
+    function openIntel(index) {
+        const ev = events[index];
+        if (!ev) return;
+        document.getElementById("intelEmpty").style.display = "none";
+        document.getElementById("intelBox").style.display = "grid";
+        document.getElementById("dId").textContent = ev.id;
+        document.getElementById("dIp").textContent = ev.ip;
+        document.getElementById("dUser").textContent = ev.user;
+        document.getElementById("dAction").textContent = ev.action;
+        document.getElementById("dTime").textContent = ev.time;
+        document.getElementById("dRisk").textContent = ev.risk + "/100";
+        document.getElementById("dBeh").textContent = ev.behavior;
+        document.getElementById("dSev").textContent = ev.severity;
+        document.getElementById("dAi").textContent = ev.ai;
+        document.getElementById("dMeaning").textContent = meaning(ev);
+        showView("intel");
+    }
+
+    const saved = sessionStorage.getItem("socView");
+    if (saved) showView(saved);
+</script>
+</body>
+</html>
